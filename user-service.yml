@@ -5,12 +5,50 @@ spring:
   application:
     name: user-service
 
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 3000
+          order-service:
+            connectTimeout: 3000
+            readTimeout: 3000
+
 eureka:
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:   # 👈 MUST be camelCase
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
 logging:
   level:
-    root: INFO
+    com.example.userservice.client: DEBUG
+    feign: DEBUG
+    io.github.resilience4j: DEBUG
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
